@@ -103,7 +103,7 @@ export default function Home() {
         {/* Footer Section */}
         <footer className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700 text-center">
           <p className="text-gray-600 dark:text-gray-400">
-            &copy; {new Date().getFullYear()} AI Studio Pro. All rights reserved.
+            &copy; {new Date().getFullYear()} All In One Studio. All rights reserved.
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
             Developed By Kavindu Wijesekara.
