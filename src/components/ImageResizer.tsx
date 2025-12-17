@@ -163,7 +163,7 @@ export default function ImageResizer() {
 
         {/* Right Column - Preview */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Preview</h3>
+          <h3 className=" flex justify-center text-lg font-semibold text-gray-800 dark:text-white">Preview</h3>
           
           <div className="space-y-6">
             {image && (

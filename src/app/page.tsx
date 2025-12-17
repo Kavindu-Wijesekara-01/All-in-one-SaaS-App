@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Menu, X } from 'lucide-react'
 import QRGenerator from '@/components/QRGenerator'
 import ImageCompressor from '@/components/ImageCompressor'
 import ImageCropper from '@/components/ImageCropper'
@@ -10,7 +11,21 @@ import BlackWhiteConverter from '@/components/BlackWhiteConverter'
 type ToolType = 'qr' | 'compressor' | 'cropper' | 'resizer' | 'converter' | 'ai-analyzer'
 
 export default function Home() {
-  const [activeTool, setActiveTool] = useState<ToolType>('ai-analyzer')
+  const [activeTool, setActiveTool] = useState<ToolType>('qr')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const tools = [
+    { id: 'qr' as ToolType, name: 'QR Generator' },
+    { id: 'compressor' as ToolType, name: 'Image Compressor' },
+    { id: 'cropper' as ToolType, name: 'Image Cropper' },
+    { id: 'resizer' as ToolType, name: 'Image Resizer' },
+    { id: 'converter' as ToolType, name: 'B&W Converter' },
+  ]
+
+  const handleToolChange = (tool: ToolType) => {
+    setActiveTool(tool)
+    setMobileMenuOpen(false)
+  }
 
   const renderTool = () => {
     switch (activeTool) {
@@ -29,6 +44,10 @@ export default function Home() {
     }
   }
 
+  const getActiveToolName = () => {
+    return tools.find(tool => tool.id === activeTool)?.name || 'Select Tool'
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <main className="container mx-auto px-4 py-12">
@@ -41,59 +60,55 @@ export default function Home() {
           </p>
         </div>
         
-        {/* Tool Navigation */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8">
-          
+        {/* Tool Navigation - Desktop */}
+        <div className="hidden lg:flex flex-wrap justify-center gap-4 mb-8">
+          {tools.map((tool) => (
+            <button
+              key={tool.id}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                activeTool === tool.id
+                  ? 'bg-blue-600 text-white shadow-lg scale-105'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              onClick={() => handleToolChange(tool.id)}
+            >
+              {tool.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Tool Navigation - Mobile/Tablet */}
+        <div className="lg:hidden mb-8">
           <button
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              activeTool === 'qr'
-                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            onClick={() => setActiveTool('qr')}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-6 py-4 rounded-lg font-semibold flex items-center justify-between shadow-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
-            QR Generator
+            <span>{getActiveToolName()}</span>
+            {mobileMenuOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
           </button>
-          <button
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              activeTool === 'compressor'
-                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            onClick={() => setActiveTool('compressor')}
-          >
-            Image Compressor
-          </button>
-          <button
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              activeTool === 'cropper'
-                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            onClick={() => setActiveTool('cropper')}
-          >
-            Image Cropper
-          </button>
-          <button
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              activeTool === 'resizer'
-                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            onClick={() => setActiveTool('resizer')}
-          >
-            Image Resizer
-          </button>
-          <button
-            className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
-              activeTool === 'converter'
-                ? 'bg-blue-600 text-white shadow-lg scale-105'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-            }`}
-            onClick={() => setActiveTool('converter')}
-          >
-            B&W Converter
-          </button>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden animate-fadeIn">
+              {tools.map((tool, index) => (
+                <button
+                  key={tool.id}
+                  className={`w-full px-6 py-4 text-left font-medium transition-colors ${
+                    activeTool === tool.id
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  } ${index !== tools.length - 1 ? 'border-b border-gray-200 dark:border-gray-700' : ''}`}
+                  onClick={() => handleToolChange(tool.id)}
+                >
+                  {tool.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Active Tool Display */}
@@ -111,6 +126,22 @@ export default function Home() {
           </p>
         </footer>
       </main>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+      `}</style>
     </div>
   )
 }

@@ -1,12 +1,25 @@
 'use client'
 
-import { useState } from 'react'
-import { Upload, Download, Crop } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Upload, Download, Crop, RotateCcw, Image as ImageIcon } from 'lucide-react'
 
 export default function ImageCropper() {
   const [image, setImage] = useState<string | null>(null)
   const [croppedImage, setCroppedImage] = useState<string | null>(null)
   const [cropping, setCropping] = useState<boolean>(false)
+  const [cropMode, setCropMode] = useState<'center' | 'manual'>('manual')
+  const [outputFormat, setOutputFormat] = useState<'png' | 'jpeg'>('png')
+  
+  // Manual crop state
+  const [isDragging, setIsDragging] = useState(false)
+  const [isResizing, setIsResizing] = useState(false)
+  const [resizeHandle, setResizeHandle] = useState<string | null>(null)
+  const [cropArea, setCropArea] = useState({ x: 50, y: 50, width: 200, height: 200 })
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const imageRef = useRef<HTMLImageElement>(null)
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -20,8 +33,109 @@ export default function ImageCropper() {
     }
   }
 
+  useEffect(() => {
+    if (image && imageRef.current) {
+      const img = imageRef.current
+      const updateSize = () => {
+        const rect = img.getBoundingClientRect()
+        setImageSize({ width: rect.width, height: rect.height })
+        // Reset crop area to center when image loads
+        const size = Math.min(rect.width, rect.height) * 0.6
+        setCropArea({
+          x: (rect.width - size) / 2,
+          y: (rect.height - size) / 2,
+          width: size,
+          height: size
+        })
+      }
+      
+      if (img.complete) {
+        updateSize()
+      } else {
+        img.onload = updateSize
+      }
+      
+      window.addEventListener('resize', updateSize)
+      return () => window.removeEventListener('resize', updateSize)
+    }
+  }, [image])
+
+  const handleMouseDown = (e: React.MouseEvent, handle?: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (handle) {
+      setIsResizing(true)
+      setResizeHandle(handle)
+    } else {
+      setIsDragging(true)
+    }
+    
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging && !isResizing) return
+
+    const deltaX = e.clientX - dragStart.x
+    const deltaY = e.clientY - dragStart.y
+
+    if (isDragging) {
+      setCropArea(prev => ({
+        ...prev,
+        x: Math.max(0, Math.min(imageSize.width - prev.width, prev.x + deltaX)),
+        y: Math.max(0, Math.min(imageSize.height - prev.height, prev.y + deltaY))
+      }))
+    } else if (isResizing && resizeHandle) {
+      setCropArea(prev => {
+        let newArea = { ...prev }
+        
+        switch (resizeHandle) {
+          case 'nw':
+            newArea.width = Math.max(50, prev.width - deltaX)
+            newArea.height = Math.max(50, prev.height - deltaY)
+            newArea.x = Math.max(0, prev.x + deltaX)
+            newArea.y = Math.max(0, prev.y + deltaY)
+            break
+          case 'ne':
+            newArea.width = Math.max(50, prev.width + deltaX)
+            newArea.height = Math.max(50, prev.height - deltaY)
+            newArea.y = Math.max(0, prev.y + deltaY)
+            break
+          case 'sw':
+            newArea.width = Math.max(50, prev.width - deltaX)
+            newArea.height = Math.max(50, prev.height + deltaY)
+            newArea.x = Math.max(0, prev.x + deltaX)
+            break
+          case 'se':
+            newArea.width = Math.max(50, prev.width + deltaX)
+            newArea.height = Math.max(50, prev.height + deltaY)
+            break
+        }
+        
+        // Keep within bounds
+        if (newArea.x + newArea.width > imageSize.width) {
+          newArea.width = imageSize.width - newArea.x
+        }
+        if (newArea.y + newArea.height > imageSize.height) {
+          newArea.height = imageSize.height - newArea.y
+        }
+        
+        return newArea
+      })
+    }
+    
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }
+
+  const handleMouseUp = () => {
+    setIsDragging(false)
+    setIsResizing(false)
+    setResizeHandle(null)
+  }
+
   const cropImage = () => {
-    if (!image) return
+    if (!image || !imageRef.current) return
     
     setCropping(true)
     const img = new Image()
@@ -30,18 +144,59 @@ export default function ImageCropper() {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
       
-      // Set canvas size to 400x400 for cropped image
-      canvas.width = 400
-      canvas.height = 400
+      if (!ctx) {
+        setCropping(false)
+        return
+      }
       
-      // Calculate cropping dimensions (center crop)
-      const size = Math.min(img.width, img.height)
-      const sx = (img.width - size) / 2
-      const sy = (img.height - size) / 2
+      // Enable high quality image smoothing
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
       
-      ctx?.drawImage(img, sx, sy, size, size, 0, 0, 400, 400)
+      if (cropMode === 'center') {
+        // Center crop logic - maintain original resolution
+        const size = Math.min(img.width, img.height)
+        canvas.width = size
+        canvas.height = size
+        
+        const sx = (img.width - size) / 2
+        const sy = (img.height - size) / 2
+        
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size)
+      } else {
+        // Manual crop logic - maintain full original resolution
+        const imgElement = imageRef.current!
+        const scaleX = img.width / imgElement.width
+        const scaleY = img.height / imgElement.height
+        
+        // Calculate crop dimensions in original image resolution
+        const sourceX = cropArea.x * scaleX
+        const sourceY = cropArea.y * scaleY
+        const sourceWidth = cropArea.width * scaleX
+        const sourceHeight = cropArea.height * scaleY
+        
+        // Set canvas to actual crop size (full resolution)
+        canvas.width = sourceWidth
+        canvas.height = sourceHeight
+        
+        // Draw the cropped portion at full resolution
+        ctx.drawImage(
+          img,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          0, 0, sourceWidth, sourceHeight
+        )
+      }
       
-      const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.9)
+      // Export at 100% quality
+      let croppedDataUrl: string
+      if (outputFormat === 'png') {
+        // PNG is lossless - perfect quality
+        croppedDataUrl = canvas.toDataURL('image/png')
+      } else {
+        // JPEG at 100% quality (1.0 = 100%)
+        croppedDataUrl = canvas.toDataURL('image/jpeg', 1.0)
+      }
+      
       setCroppedImage(croppedDataUrl)
       setCropping(false)
     }
@@ -51,18 +206,35 @@ export default function ImageCropper() {
     if (!croppedImage) return
     const link = document.createElement('a')
     link.href = croppedImage
-    link.download = 'cropped-image.jpg'
+    link.download = `cropped-image.${outputFormat}`
     link.click()
   }
 
+  const resetCrop = () => {
+    if (imageSize.width && imageSize.height) {
+      const size = Math.min(imageSize.width, imageSize.height) * 0.6
+      setCropArea({
+        x: (imageSize.width - size) / 2,
+        y: (imageSize.height - size) / 2,
+        width: size,
+        height: size
+      })
+    }
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center gap-3 mb-6">
         <Crop className="w-8 h-8 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Image Cropper</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">High Quality Image Cropper</h2>
       </div>
       
-      <p className="text-gray-600 dark:text-gray-300 mb-6">Upload an image and crop it to a perfect square (center crop).</p>
+      {/* <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div className="flex items-start gap-3">
+          <ImageIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+          
+        </div>
+      </div> */}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Controls */}
@@ -89,15 +261,79 @@ export default function ImageCropper() {
             </label>
           </div>
 
-          {/* Crop Button */}
+          {/* Settings */}
           {image && (
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl">
-              <div className="mb-4">
-                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Crop Settings</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  This will create a 400x400 square crop from the center of your image.
+            <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl space-y-4">
+              {/* Crop Mode */}
+              <div>
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Crop Mode</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setCropMode('manual')}
+                    className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+                      cropMode === 'manual'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Manual
+                  </button>
+                  
+                </div>
+              </div>
+
+              {/* Output Format */}
+              <div>
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Output Format</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setOutputFormat('png')}
+                    className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+                      outputFormat === 'png'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    PNG (100%)
+                  </button>
+                  <button
+                    onClick={() => setOutputFormat('jpeg')}
+                    className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+                      outputFormat === 'jpeg'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    JPEG (1Lossless)
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                  {outputFormat === 'png' 
+                    ? 'Perfect quality, larger file size' 
+                    : 'Maximum JPEG quality, smaller file size'}
                 </p>
               </div>
+              
+              {cropMode === 'manual' && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Drag the crop area to position it, or drag the corners to resize.
+                  </p>
+                  <button
+                    onClick={resetCrop}
+                    className="w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    Reset Crop Area
+                  </button>
+                </div>
+              )}
+              
+              {cropMode === 'center' && (
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This will create a square crop from the center of your image at full resolution.
+                </p>
+              )}
               
               <button
                 onClick={cropImage}
@@ -105,7 +341,7 @@ export default function ImageCropper() {
                 className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Crop className="w-5 h-5" />
-                {cropping ? 'Cropping...' : 'Crop Image (400x400)'}
+                {cropping ? 'Processing...' : 'Crop Image (100% Quality)'}
               </button>
             </div>
           )}
@@ -113,19 +349,76 @@ export default function ImageCropper() {
 
         {/* Right Column - Preview */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Preview</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white text-center">Preview</h3>
           
           <div className="space-y-6">
             {image && (
               <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl">
                 <p className="text-gray-600 dark:text-gray-400 mb-3 font-medium">Original Image</p>
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                <div 
+                  ref={canvasRef}
+                  className="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                >
                   <img 
+                    ref={imageRef}
                     src={image} 
                     alt="Original" 
-                    className="w-full h-auto max-h-64 object-contain mx-auto"
+                    className="w-full h-auto max-h-96 object-contain mx-auto select-none"
+                    draggable={false}
                   />
+                  
+                  {/* Manual crop overlay */}
+                  {cropMode === 'manual' && imageSize.width > 0 && (
+                    <>
+                      {/* Dark overlay */}
+                      <div className="absolute inset-0 bg-black bg-opacity-50 pointer-events-none" />
+                      
+                      {/* Crop area */}
+                      <div
+                        className="absolute border-2 border-white shadow-lg cursor-move"
+                        style={{
+                          left: `${cropArea.x}px`,
+                          top: `${cropArea.y}px`,
+                          width: `${cropArea.width}px`,
+                          height: `${cropArea.height}px`,
+                          boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
+                        }}
+                        onMouseDown={(e) => handleMouseDown(e)}
+                      >
+                        {/* Resize handles */}
+                        {['nw', 'ne', 'sw', 'se'].map(handle => (
+                          <div
+                            key={handle}
+                            className="absolute w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-pointer hover:scale-125 transition-transform"
+                            style={{
+                              [handle.includes('n') ? 'top' : 'bottom']: '-8px',
+                              [handle.includes('w') ? 'left' : 'right']: '-8px',
+                              cursor: `${handle}-resize`
+                            }}
+                            onMouseDown={(e) => handleMouseDown(e, handle)}
+                          />
+                        ))}
+                        
+                        {/* Grid lines */}
+                        <div className="absolute inset-0 pointer-events-none">
+                          <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white opacity-50" />
+                          <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white opacity-50" />
+                          <div className="absolute top-1/3 left-0 right-0 h-px bg-white opacity-50" />
+                          <div className="absolute top-2/3 left-0 right-0 h-px bg-white opacity-50" />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
+                
+                {cropMode === 'manual' && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                    Crop size: {Math.round(cropArea.width)} × {Math.round(cropArea.height)} px (display) | Full resolution will be maintained
+                  </p>
+                )}
               </div>
             )}
 
@@ -134,7 +427,7 @@ export default function ImageCropper() {
                 <div className="flex justify-between items-center mb-3">
                   <p className="text-gray-600 dark:text-gray-400 font-medium">Cropped Image</p>
                   <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full text-sm font-medium">
-                    400×400
+                    100% Quality
                   </span>
                 </div>
                 <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-4">
@@ -149,7 +442,7 @@ export default function ImageCropper() {
                   className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <Download className="w-5 h-5" />
-                  Download Cropped Image
+                  Download ({outputFormat.toUpperCase()})
                 </button>
               </div>
             )}
