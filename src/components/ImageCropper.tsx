@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Upload, Download, Crop, RotateCcw, Image as ImageIcon } from 'lucide-react'
+import { Upload, Download, Crop, RotateCcw } from 'lucide-react'
 
 export default function ImageCropper() {
   const [image, setImage] = useState<string | null>(null)
@@ -223,24 +223,17 @@ export default function ImageCropper() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Crop className="w-8 h-8 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">High Quality Image Cropper</h2>
+    <div className="max-w-9xl py-4 sm:py-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Crop className="w-7 h-7 text-blue-600" />
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white">High Quality Image Cropper</h2>
       </div>
       
-      {/* <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-        <div className="flex items-start gap-3">
-          <ImageIcon className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-          
-        </div>
-      </div> */}
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Left Column - Controls */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Upload Section */}
-          <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-8 text-center hover:border-blue-500 transition-colors">
+          <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 sm:p-8 text-center hover:border-blue-500 transition-colors">
             <input
               type="file"
               accept="image/*"
@@ -263,14 +256,14 @@ export default function ImageCropper() {
 
           {/* Settings */}
           {image && (
-            <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl space-y-4">
+            <div className="bg-gray-50 dark:bg-gray-900/50 p-3 sm:p-2 rounded-lg space-y-5">
               {/* Crop Mode */}
               <div>
-                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Crop Mode</h4>
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3 text-base sm:text-sm">Crop Mode</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setCropMode('manual')}
-                    className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+                    className={`py-3 sm:py-2 px-4 rounded-lg text-base sm:text-sm font-medium transition-colors ${
                       cropMode === 'manual'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -284,11 +277,11 @@ export default function ImageCropper() {
 
               {/* Output Format */}
               <div>
-                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3">Output Format</h4>
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-3 text-base sm:text-sm">Output Format</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setOutputFormat('png')}
-                    className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+                    className={`py-3 sm:py-2 px-4 rounded-lg text-base sm:text-sm font-medium transition-colors ${
                       outputFormat === 'png'
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -298,13 +291,13 @@ export default function ImageCropper() {
                   </button>
                   <button
                     onClick={() => setOutputFormat('jpeg')}
-                    className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+                    className={`py-3 sm:py-2 px-4 rounded-lg text-base sm:text-sm font-medium transition-colors ${
                       outputFormat === 'jpeg'
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
-                    JPEG (1Lossless)
+                    JPEG (Lossless)
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -321,7 +314,7 @@ export default function ImageCropper() {
                   </p>
                   <button
                     onClick={resetCrop}
-                    className="w-full py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 sm:py-2 px-4 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 text-base sm:text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Reset Crop Area
@@ -338,7 +331,7 @@ export default function ImageCropper() {
               <button
                 onClick={cropImage}
                 disabled={cropping}
-                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full py-4 sm:py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-base sm:text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 <Crop className="w-5 h-5" />
                 {cropping ? 'Processing...' : 'Crop Image (100% Quality)'}
@@ -348,16 +341,16 @@ export default function ImageCropper() {
         </div>
 
         {/* Right Column - Preview */}
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white text-center">Preview</h3>
+        <div className="space-y-4">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-800 dark:text-white text-center px-3 sm:px-0">Preview</h3>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             {image && (
-              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl">
-                <p className="text-gray-600 dark:text-gray-400 mb-3 font-medium">Original Image</p>
+              <div className="bg-gray-50 dark:bg-gray-900/50 py-3 px-0 sm:p-4 rounded-lg">
+                <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium text-sm px-3 sm:px-0">Original Image</p>
                 <div 
                   ref={canvasRef}
-                  className="relative border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                  className="relative rounded-lg overflow-hidden"
                   onMouseMove={handleMouseMove}
                   onMouseUp={handleMouseUp}
                   onMouseLeave={handleMouseUp}
@@ -415,7 +408,7 @@ export default function ImageCropper() {
                 </div>
                 
                 {cropMode === 'manual' && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center px-3 sm:px-0">
                     Crop size: {Math.round(cropArea.width)} × {Math.round(cropArea.height)} px (display) | Full resolution will be maintained
                   </p>
                 )}
@@ -423,27 +416,29 @@ export default function ImageCropper() {
             )}
 
             {croppedImage && (
-              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800">
-                <div className="flex justify-between items-center mb-3">
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">Cropped Image</p>
-                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full text-sm font-medium">
+              <div className="bg-green-50 dark:bg-green-900/20 py-3 px-0 sm:p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-2 px-3 sm:px-0">
+                  <p className="text-gray-600 dark:text-gray-400 font-medium text-sm">Cropped Image</p>
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full text-xs font-medium">
                     100% Quality
                   </span>
                 </div>
-                <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-4">
+                <div className="rounded-lg overflow-hidden mb-3">
                   <img 
                     src={croppedImage} 
                     alt="Cropped" 
                     className="w-full h-auto max-h-64 object-contain mx-auto"
                   />
                 </div>
-                <button
-                  onClick={handleDownload}
-                  className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  <Download className="w-5 h-5" />
-                  Download ({outputFormat.toUpperCase()})
-                </button>
+                <div className="px-3 sm:px-0">
+                  <button
+                    onClick={handleDownload}
+                    className="w-full py-4 sm:py-3 px-4 bg-green-600 hover:bg-green-700 text-white text-base sm:text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Download className="w-5 h-5" />
+                    Download ({outputFormat.toUpperCase()})
+                  </button>
+                </div>
               </div>
             )}
           </div>

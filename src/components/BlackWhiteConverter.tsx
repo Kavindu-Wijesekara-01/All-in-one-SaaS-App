@@ -100,9 +100,6 @@ export default function BlackWhiteConverter() {
             <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-xl">
               <div className="mb-4">
                 <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Convert to Grayscale</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  This will convert your image to classic black & white by averaging RGB values.
-                </p>
               </div>
               
               <button
@@ -136,7 +133,7 @@ export default function BlackWhiteConverter() {
             )}
 
             {convertedImage && (
-              <div className="bg-gray-800/10 dark:bg-gray-900 p-4 rounded-xl border border-gray-300 dark:border-gray-700">
+              <div className=" bg-gray-800/10 dark:bg-gray-900 p-4 rounded-xl border border-gray-300 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-3">
                   <p className="text-gray-600 dark:text-gray-400 font-medium">Black & White</p>
                   <span className="px-3 py-1 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-300 rounded-full text-sm font-medium">
