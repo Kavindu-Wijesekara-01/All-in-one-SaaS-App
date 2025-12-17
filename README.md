@@ -8,7 +8,7 @@
 
 A comprehensive suite of free online tools for image editing and QR code generation, built with modern web technologies.
 
-**Live Demo**: [https://all-in-one-saa-s-app.vercel.app/](https://all-in-one-saa-s-app.vercel.app/)
+**Live Demo**: [https://all-in-one-studio.vercel.app/](https://all-in-one-studio.vercel.app/)
 
 ## ✨ Features
 
