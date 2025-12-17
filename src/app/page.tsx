@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import QRGenerator from '../components/QRGenerator'
-import ImageCompressor from '../components/ImageCompressor'
-import ImageCropper from '../components/ImageCropper'
-import ImageResizer from '../components/ImageResizer'
-import BlackWhiteConverter from '../components/BlackWhiteConverter'
+import QRGenerator from '@/components/QRGenerator'
+import ImageCompressor from '@/components/ImageCompressor'
+import ImageCropper from '@/components/ImageCropper'
+import ImageResizer from '@/components/ImageResizer'
+import BlackWhiteConverter from '@/components/BlackWhiteConverter'
 
-type ToolType = 'qr' | 'compressor' | 'cropper' | 'resizer' | 'converter'
+type ToolType = 'qr' | 'compressor' | 'cropper' | 'resizer' | 'converter' | 'ai-analyzer'
 
 export default function Home() {
-  const [activeTool, setActiveTool] = useState<ToolType>('qr')
+  const [activeTool, setActiveTool] = useState<ToolType>('ai-analyzer')
 
   const renderTool = () => {
     switch (activeTool) {
@@ -37,12 +37,13 @@ export default function Home() {
             All In One Studio.
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl mx-auto">
-            Free online tools for image editing and QR code generation
+            Free online tools for image editing, QR code generation & AI analysis
           </p>
         </div>
         
         {/* Tool Navigation */}
         <div className="flex flex-wrap justify-center gap-4 mb-8">
+          
           <button
             className={`px-6 py-3 rounded-lg font-semibold transition-all duration-200 ${
               activeTool === 'qr'
