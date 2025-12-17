@@ -60,9 +60,19 @@ export default function ImageCropper() {
     }
   }, [image])
 
-  const handleMouseDown = (e: React.MouseEvent, handle?: string) => {
+  // Get coordinates from mouse or touch event
+  const getEventCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    }
+    return { x: e.clientX, y: e.clientY }
+  }
+
+  const handleStart = (e: React.MouseEvent | React.TouchEvent, handle?: string) => {
     e.preventDefault()
     e.stopPropagation()
+    
+    const coords = getEventCoordinates(e)
     
     if (handle) {
       setIsResizing(true)
@@ -71,14 +81,15 @@ export default function ImageCropper() {
       setIsDragging(true)
     }
     
-    setDragStart({ x: e.clientX, y: e.clientY })
+    setDragStart({ x: coords.x, y: coords.y })
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging && !isResizing) return
 
-    const deltaX = e.clientX - dragStart.x
-    const deltaY = e.clientY - dragStart.y
+    const coords = getEventCoordinates(e)
+    const deltaX = coords.x - dragStart.x
+    const deltaY = coords.y - dragStart.y
 
     if (isDragging) {
       setCropArea(prev => ({
@@ -125,10 +136,10 @@ export default function ImageCropper() {
       })
     }
     
-    setDragStart({ x: e.clientX, y: e.clientY })
+    setDragStart({ x: coords.x, y: coords.y })
   }
 
-  const handleMouseUp = () => {
+  const handleEnd = () => {
     setIsDragging(false)
     setIsResizing(false)
     setResizeHandle(null)
@@ -271,7 +282,16 @@ export default function ImageCropper() {
                   >
                     Manual
                   </button>
-                  
+                  <button
+                    onClick={() => setCropMode('center')}
+                    className={`py-3 sm:py-2 px-4 rounded-lg text-base sm:text-sm font-medium transition-colors ${
+                      cropMode === 'center'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    Center
+                  </button>
                 </div>
               </div>
 
@@ -327,15 +347,6 @@ export default function ImageCropper() {
                   This will create a square crop from the center of your image at full resolution.
                 </p>
               )}
-              
-              <button
-                onClick={cropImage}
-                disabled={cropping}
-                className="w-full py-4 sm:py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-base sm:text-sm font-semibold rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                <Crop className="w-5 h-5" />
-                {cropping ? 'Processing...' : 'Crop Image (100% Quality)'}
-              </button>
             </div>
           )}
         </div>
@@ -350,10 +361,12 @@ export default function ImageCropper() {
                 <p className="text-gray-600 dark:text-gray-400 mb-2 font-medium text-sm px-3 sm:px-0">Original Image</p>
                 <div 
                   ref={canvasRef}
-                  className="relative rounded-lg overflow-hidden"
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
+                  className="relative rounded-lg overflow-hidden touch-none"
+                  onMouseMove={handleMove}
+                  onMouseUp={handleEnd}
+                  onMouseLeave={handleEnd}
+                  onTouchMove={handleMove}
+                  onTouchEnd={handleEnd}
                 >
                   <img 
                     ref={imageRef}
@@ -371,7 +384,7 @@ export default function ImageCropper() {
                       
                       {/* Crop area */}
                       <div
-                        className="absolute border-2 border-white shadow-lg cursor-move"
+                        className="absolute border-2 border-white shadow-lg cursor-move touch-none"
                         style={{
                           left: `${cropArea.x}px`,
                           top: `${cropArea.y}px`,
@@ -379,19 +392,21 @@ export default function ImageCropper() {
                           height: `${cropArea.height}px`,
                           boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
                         }}
-                        onMouseDown={(e) => handleMouseDown(e)}
+                        onMouseDown={handleStart}
+                        onTouchStart={handleStart}
                       >
                         {/* Resize handles */}
                         {['nw', 'ne', 'sw', 'se'].map(handle => (
                           <div
                             key={handle}
-                            className="absolute w-4 h-4 bg-white border-2 border-blue-500 rounded-full cursor-pointer hover:scale-125 transition-transform"
+                            className="absolute w-6 h-6 sm:w-4 sm:h-4 bg-white border-2 border-blue-500 rounded-full cursor-pointer hover:scale-125 transition-transform"
                             style={{
-                              [handle.includes('n') ? 'top' : 'bottom']: '-8px',
-                              [handle.includes('w') ? 'left' : 'right']: '-8px',
+                              [handle.includes('n') ? 'top' : 'bottom']: '-12px',
+                              [handle.includes('w') ? 'left' : 'right']: '-12px',
                               cursor: `${handle}-resize`
                             }}
-                            onMouseDown={(e) => handleMouseDown(e, handle)}
+                            onMouseDown={(e) => handleStart(e, handle)}
+                            onTouchStart={(e) => handleStart(e, handle)}
                           />
                         ))}
                         
@@ -412,6 +427,17 @@ export default function ImageCropper() {
                     Crop size: {Math.round(cropArea.width)} × {Math.round(cropArea.height)} px (display) | Full resolution will be maintained
                   </p>
                 )}
+                
+                <div className="mt-3 px-3 sm:px-0">
+                  <button
+                    onClick={cropImage}
+                    disabled={cropping}
+                    className="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Crop className="w-4 h-4" />
+                    {cropping ? 'Processing...' : 'Crop Image'}
+                  </button>
+                </div>
               </div>
             )}
 
